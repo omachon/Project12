@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Application for Food Services</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            color: #333;
+        }
+        
+        header {
+            background: linear-gradient(90deg, #333, #555);
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+        }
+        
+        nav {
+            background-color: #333;
+            overflow: hidden;
+        }
+        
+        nav a {
+            float: left;
+            display: block;
+            color: #f2f2f2;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+        }
+        
+        nav a:hover {
+            background-color: #ddd;
+            color: black;
+        }
+        
+        .content {
+            margin: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: none;
+            /* Hide all content initially */
+        }
+        
+        form {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input,
+        select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        
+        button {
+            padding: 12px;
+            background-color: #333;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background-color: #555;
+        }
+        
+        canvas {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            height: 70%;
+        }
+        
+        .form-type-fields {
+            display: none;
+        }
+        
+        #FormPreview {
+            display: none;
+        }
+        
+        .form-field {
+            margin-bottom: 10px;
+        }
+        
+        canvas {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            height: 70vh;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Web Application for Food Services</h1>
+    </header>
+
+    <nav>
+        <a href="#" onclick="showPage('loginPage')">Login Page</a>
+        <a href="#" onclick="showPage('chartPage')">Chart Display</a>
+        <a href="#" onclick="showPage('FormsPage')">Create Forms</a>
+        <a href="#" onclick="showPage('ViewFormsPage')">View Forms</a>
+        <a href="#" onclick="showPage('BroadcastPage')">Send Form</a>
+    </nav>
+
+    <div id="contentContainer">
+        <!-- Content for each page will be dynamically loaded here -->
+    </div>
+
+    <div id="loginPage" class="content">
+        <form id="loginForm">
+            <label for="loginEmail">Email:</label>
+            <input type="email" id="loginEmail" required>
+
+            <label for="loginPassword">Password:</label>
+            <input type="password" id="loginPassword" required>
+            <button type="button" onclick="loginUser()">Login</button>
+        </form>
+    </div>
+
+    <div id="chartPage" class="content">
+        <form id="dataForm">
+            <label for="dataInput">Enter Data (comma-separated): </label>
+            <input type="text" id="dataInput" required>
+
+            <label for="chartType">Select Chart Type: </label>
+            <select id="chartType">
+                <option value="bar">Bar Chart</option>
+                <option value="line">Line Chart</option>
+                <option value="radar">Radar Chart</option>
+                <option value="pie">Pie Chart</option>
+                <option value="doughnut">Doughnut Chart</option>
+                <option value="polarArea">Polar Area Chart</option>
+                <option value="scatter">Scatter Chart</option>
+            </select>
+
+            <button type="button" onclick="generateChart()">Generate Chart</button>
+            <button type="button" onclick="clearChart()">Clear</button>
+        </form>
+        <canvas id="myChart"></canvas>
+    </div>
+
+    <div id="FormsPage" class="content">
+        <h2>Create a Form</h2>
+        <form id="CreateForm">
+            <label for="formTitle">Enter Form Title:</label>
+            <input type="text" id="formTitle" required>
+
+            <label for="formType">Form Type:</label>
+
+            <select id="formType" onchange="toggleFormFields()">
+                <option value="poll">Poll</option>
+                <option value="textual">Textual Response</option>
+            </select>
+
+            <div id="pollFields" class="form-type-fields">
+                <label for="pollOptions">Poll Options (comma-separated):</label>
+                <input type="text" id="pollOptions">
+            </div>
+
+            <button type="button" onclick="addFormField()">Add Form Field</button>
+
+            <div id="formFields">
+                <!-- Form fields will be dynamically added here -->
+            </div>
+
+            <button type="button" onclick="createForm()">Create Form</button>
+        </form>
+    </div>
+
+    <div id="FormPreview" class="content">
+        <h2>Form Preview</h2>
+        <div id="previewTitle"></div>
+        <div id="previewType"></div>
+        <div id="previewFields"></div>
+    </div>
+
+    <div id="ViewFormsPage" class="content">
+        <h2>View Created Forms</h2>
+        <div id="formsList">
+            <!-- Forms will be dynamically added here -->
+        </div>
+    </div>
+
+    <!-- Add this to your HTML -->
+    <div id="BroadcastPage" class="content">
+        <h2>Create and Send Broadcast Form</h2>
+        <form id="broadcastForm">
+            <label for="broadcastFormSelect">Select Form:</label>
+            <select id="broadcastFormSelect" required>
+                <option>Poll Form</option>
+                <option>Textual Responses Form</option>
+            </select>
+
+            <label for="recipientEmails">Recipient Emails (comma-separated):</label>
+            <input type="text" id="recipientEmails" required>
+
+            <button type="button" onclick="sendBroadcastForm()">Send Broadcast Form</button>
+        </form>
+    </div>
+
+
+    <script>
+        let myChart = null;
+        let formFieldsCounter = 0; // Counter for dynamically added form fields
+
+        function generateChart() {
+            const dataInput = document.getElementById('dataInput').value;
+            const dataArray = dataInput.split(',').map(Number);
+            const chartType = document.getElementById('chartType').value;
+            const chartLabels = Array.from({
+                length: dataArray.length
+            }, (_, i) => `Label ${i + 1}`);
+
+            // Clear any existing chart
+            if (myChart) {
+                myChart.destroy();
+            }
+            // Create the new chart
+            const ctx = document.getElementById('myChart').getContext('2d');
+            const maxHeight = 500;
+
+            let canvasHeight = Math.min(window.innerHeight - 150, maxHeight);
+
+            ctx.canvas.height = canvasHeight;
+            ctx.canvas.width = window.innerWidth - 40; // Adjust this width based on your preferences
+
+            myChart = new Chart(ctx, {
+                type: chartType,
+                data: {
+                    labels: Array.from({
+                        length: dataArray.length
+                    }, (_, i) => `Label ${i + 1}`),
+                    datasets: [{
+                        label: 'User Data',
+                        data: dataArray,
+                        backgroundColor: generateColorArray(dataArray.length),
+                        borderColor: generateColorArray(dataArray.length, 1),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        x: {
+                            type: 'category',
+                            labels: Array.from({
+                                length: dataArray.length
+                            }, (_, i) => `Label ${i + 1}`),
+                        },
+                        y: {
+                            beginAtZero: true,
+                        }
+                    },
+                    animation: false
+                }
+            });
+            // Ensure the canvas size is set appropriately
+            ctx.canvas.height = 400;
+            ctx.canvas.width = 600; // Adjust this width based on your preferences
+        }
+
+        function generateColorArray(length, alpha = 0.2) {
+            // Generate an array of random colors with transparency (alpha)
+            return Array.from({
+                length
+            }, () => getRandomColor(alpha));
+        }
+
+        function getRandomColor(alpha) {
+            // Generate a random RGBA color
+            const r = Math.floor(Math.random() * 256);
+            const g = Math.floor(Math.random() * 256);
+            const b = Math.floor(Math.random() * 256);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+
+        function clearChart() {
+            document.getElementById('dataInput').value = ''; // Clear input field
+            if (myChart) {
+                myChart.destroy(); // Clear the chart
+                myChart = null; // Reset the chart instance
+            }
+        }
+
+        function toggleFormFields() {
+            const formType = document.getElementById('formType').value;
+            const pollFields = document.getElementById('pollFields');
+
+            // Hide all form type-specific fields
+            document.querySelectorAll('.form-type-fields').forEach(field => {
+                field.style.display = 'none';
+            });
+            // Display fields specific to the selected form type
+            if (formType === 'poll') {
+                pollFields.style.display = 'block';
+            }
+        }
+
+        function showPage(pageId) {
+            const pages = ['loginPage', 'chartPage', 'FormsPage', 'ViewFormsPage', 'BroadcastPage'];
+            pages.forEach(page => {
+                const element = document.getElementById(page);
+                if (element) {
+                    element.style.display = page === pageId ? 'block' : 'none';
+                }
+            });
+        }
+
+        function addFormField() {
+            const formType = document.getElementById('formType').value;
+            const formFieldsDiv = document.getElementById('formFields');
+
+            // Create a new div for the form field
+            const newFormField = document.createElement('div');
+            newFormField.className = 'form-field';
+
+            // Create label for the form field
+            const label = document.createElement('label');
+            label.textContent = `Field ${formFieldsCounter + 1}:`;
+
+            // Create input for the form field
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.name = `field_${formFieldsCounter}`;
+            input.placeholder = 'Enter field value';
+
+            // Append label and input to the form field div
+            newFormField.appendChild(label);
+            newFormField.appendChild(input);
+
+            // Append the new form field to the formFieldsDiv
+            formFieldsDiv.appendChild(newFormField);
+
+            // Increment the formFieldsCounter
+            formFieldsCounter++;
+        }
+
+        function createForm() {
+            const formTitle = document.getElementById('formTitle').value;
+            const formType = document.getElementById('formType').value;
+            const formFieldsValues = getFormFieldsValues();
+
+            // Validate form fields if needed...
+
+            // Create an object with form data
+            const formData = {
+                title: formTitle,
+                type: formType,
+                fields: formFieldsValues,
+            };
+
+            axios.post('http://localhost:3000/createForm', formData)
+                .then(response => {
+                    console.log('Form creation response:', response.data);
+                    // Add any additional logic based on the response
+                    getForms();
+                })
+                .catch(error => {
+                    console.error('Error creating form:', error);
+                    // Handle error
+                });
+        }
+
+        function getFormFieldsValues() {
+            const formFieldsValues = [];
+            document.querySelectorAll('.form-field input').forEach(input => {
+                formFieldsValues.push(input.value);
+            });
+            return formFieldsValues;
+        }
+
+        function getForms() {
+            axios.get('http://localhost:3000/getForms')
+                .then(response => {
+                    console.log('All forms:', response.data);
+
+                    // Update your frontend to display the forms
+                    const formsList = document.getElementById('formsList');
+                    formsList.innerHTML = ''; // Clear previous list
+
+                    if (response.data.success) {
+                        response.data.forms.forEach(form => {
+                            const formDiv = document.createElement('div');
+                            formDiv.innerHTML = `
+                                <p>Title: ${form.title}</p>
+                                <p>Type: ${form.type}</p>
+                                <button onclick="viewForm(${form.id})">View Form</button>
+                            `;
+                            formsList.appendChild(formDiv);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching forms:', error);
+                    // Handle error
+                });
+        }
+
+        function showFormPreview() {
+            const formTitle = document.getElementById('formTitle').value;
+            const formType = document.getElementById('formType').value;
+            const formFieldsValues = getFormFieldsValues();
+
+            // Display the form preview
+            document.getElementById('previewTitle').textContent = `Title: ${formTitle}`;
+            document.getElementById('previewType').textContent = `Type: ${formType}`;
+            document.getElementById('previewFields').textContent = `Fields: ${formFieldsValues.join(', ')}`;
+
+            // Show the preview section
+            document.getElementById('FormPreview').style.display = 'block';
+        }
+
+        // Function to hide the form preview
+        function hideFormPreview() {
+            // Hide the preview section
+            document.getElementById('FormPreview').style.display = 'none';
+        }
+
+        async function loginUser() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const response = await fetch('http://localhost:3000/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email,
+                        password
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(`Welcome, ${data.user.name} (${data.user.email})`);
+                    // Redirect or perform other actions for authenticated users
+                } else {
+                    alert('Login failed. Please check your credentials.');
+                }
+            } catch (error) {
+                console.error('Error during login:', error);
+            }
+            showPage('chartPage')
+        }
+
+        function getForms() {
+            axios.get('http://localhost:3000/getForms')
+                .then(response => {
+                    console.log('All forms:', response.data);
+
+                    // Update your frontend to display the forms
+                    const formsList = document.getElementById('formsList');
+                    formsList.innerHTML = ''; // Clear previous list
+
+                    if (response.data.success) {
+                        response.data.forms.forEach(form => {
+                            const formDiv = document.createElement('div');
+                            formDiv.innerHTML = `
+                <p>Title: ${form.title}</p>
+                <p>Type: ${form.type}</p>
+                <button onclick="sendForm(${form.id})">Send Form</button>
+              `;
+                            formsList.appendChild(formDiv);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching forms:', error);
+                    // Handle error
+                });
+        }
+
+        function sendForm(formId) {
+            // Fetch form fields for the selected form, you may need an additional endpoint for this
+            axios.get(`http://localhost:3000/getFormFields/${formId}`)
+                .then(response => {
+                    console.log('Form Fields:', response.data.fields);
+
+                    // Use the form fields to create a UI for the user to input responses
+                    // You can create a modal or a separate page for this
+
+                    // After receiving responses, send them to the backend
+
+
+                    axios.post('http://localhost:3000/formResponse', formResponses)
+                        .then(response => {
+                            console.log('Form response sent successfully:', response.data);
+                            // Optionally update UI to indicate success
+                        })
+                        .catch(error => {
+                            console.error('Error sending form response:', error);
+                            // Handle error
+                        });
+                })
+                .catch(error => {
+                    console.error('Error fetching form fields:', error);
+                    // Handle error
+                });
+        }
+
+        const formResponses = {
+            formId,
+            responses: getFormResponses(),
+        };
+
+        function getFormResponses() {
+            const formResponses = [];
+            document.querySelectorAll('.form-field input').forEach(input => {
+                formResponses.push(input.value);
+            });
+            return formResponses;
+        }
+
+        function getChartLabels() {
+            const labelsInput = document.getElementById('chartLabels').value;
+            return labelsInput.split(',').map(label => label.trim());
+        }
+
+        window.onload = function() {
+            getForms();
+        }
+
+        function loadPage(pageId) {
+            const contentContainer = document.getElementById('contentContainer');
+            const pages = {
+                'ViewFormsPage': `
+            <!-- Include the HTML code for the View Forms Page -->
+\        `,
+                'BroadcastPage': `
+            <!-- Include the HTML code for the Broadcast Page -->
+        `,
+                // ... existing pages ...
+                'BroadcastPage': `
+            <!-- Include the HTML code for the Broadcast Page -->
+        `,
+            };
+
+            contentContainer.innerHTML = pages[pageId] || '';
+        }
+
+        async function loadFormsDropdown() {
+            try {
+                const response = await axios.get('http://localhost:3000/getForms');
+                const formsSelect = document.getElementById('broadcastFormSelect');
+
+                formsSelect.innerHTML = ''; // Clear previous options
+                response.data.forms.forEach(form => {
+                    const option = document.createElement('option');
+                    option.value = form.id;
+                    option.textContent = form.title;
+                    formsSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error fetching forms:', error);
+            }
+        }
+
+        // Call loadFormsDropdown when the Broadcast Page is loaded
+        loadFormsDropdown();
+
+        // Function to send broadcast form
+        async function sendBroadcastForm() {
+            const formId = document.getElementById('broadcastFormSelect').value;
+            const recipientEmails = document.getElementById('recipientEmails').value;
+
+            try {
+                const response = await axios.post('http://localhost:3000/sendBroadcastForm', {
+                    formId,
+                    recipients: recipientEmails.split(',').map(email => email.trim()),
+                });
+
+                if (response.data.success) {
+                    alert('Broadcast form sent successfully.');
+                } else {
+                    alert('Failed to send broadcast form. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error sending broadcast form:', error);
+                alert('An error occurred while sending the broadcast form.');
+            }
+        }
+    </script>
+</body>
+
+</html>
